@@ -17,10 +17,7 @@ exports.handler = async (event, context, callback) => {
     await pgClient.connect();
   }
 
-  const orderId = event.pathParameters.id;
-  const query = await pgClient.query(
-    `SELECT * FROM orders.order where id = ${orderId}`,
-  );
+  const query = await pgClient.query("SELECT * FROM orders.product");
 
   return {
     "isBase64Encoded": false,

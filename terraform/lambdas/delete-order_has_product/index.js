@@ -17,9 +17,10 @@ exports.handler = async (event, context, callback) => {
     await pgClient.connect();
   }
 
-  const orderId = event.pathParameters.id;
+  const id = body.pathParameters.id;
+
   const query = await pgClient.query(
-    `SELECT * FROM orders.order where id = ${orderId}`,
+    `DELETE FROM orders.order_has_products WHERE id = ${id}`,
   );
 
   return {

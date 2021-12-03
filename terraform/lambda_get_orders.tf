@@ -38,3 +38,35 @@ resource "aws_lambda_function" "lambda_get_orders" {
   }
 }
 
+
+/* API Gateway */
+resource "aws_api_gateway_resource" "Orders" {
+  rest_api_id = aws_api_gateway_rest_api.Marchanta.id
+  parent_id   = aws_api_gateway_rest_api.Marchanta.root_resource_id
+  path_part   = "orders"
+}
+
+resource "aws_api_gateway_method" "GetOrders" {
+  rest_api_id   = aws_api_gateway_rest_api.Marchanta.id
+  resource_id   = aws_api_gateway_resource.Orders.id
+  http_method   = "GET"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "OrdersIntegration" {
+  rest_api_id             = aws_api_gateway_rest_api.Marchanta.id
+  resource_id             = aws_api_gateway_resource.Orders.id
+  http_method             = aws_api_gateway_method.GetOrders.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.lambda_get_orders.invoke_arn
+}
+
+resource "aws_lambda_permission" "OrdersPermission" {
+  statement_id  = "AllowExecutionFromAPIGateway"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.lambda_get_orders.function_name
+  principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_api_gateway_rest_api.Marchanta.execution_arn}/*/*"
+}

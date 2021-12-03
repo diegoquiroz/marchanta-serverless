@@ -5,7 +5,7 @@ exports.handler = async (event, context, callback) => {
 
   const config = {
     user: env.DB_USER,
-    passsword: env.DB_PASS,
+    password: env.DB_PASS,
     host: env.DB_HOST,
     database: env.DB_NAME,
     port: env.DB_PORT,
@@ -13,14 +13,24 @@ exports.handler = async (event, context, callback) => {
 
   const pool = new pg.Pool(config);
 
-  let data = event.body;
+  const clientId = event.clientId;
+  const currencyId = event.currencyId;
+  const paymentMethodId = event.paymentMethodId;
+  const statusId = event.statusId;
+  const isArchived = event.isArchived;
+  const shippingFee = event.shippingFee;
+  const subtotal = event.subtotal;
+  const total = event.total;
 
-  const query =
-    `INSERT INTO order VALUES ${}`;
+  const fields =
+    "client_id, subtotal, shipping_fee, total, status_id, payment_method_id, currency_id, is_archived, created_on";
+  const values =
+    `${clientId}, ${subtotal}, ${shippingFee}, ${total}, ${statusId}, ${paymentMethodId}, ${currencyId}, ${isArchived}, to_timestamp(${Date.now()} / 1000.0)`;
+
+  const query = `INSERT INTO orders.order (${fields}) VALUES (${values})`;
+
+  let db = await pool.connect();
   const queryResponse = await db.query(query);
-
-  db = await pool.connect();
-
 
   return {
     "isBase64Encoded": false,

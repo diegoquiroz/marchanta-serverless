@@ -38,3 +38,34 @@ resource "aws_lambda_function" "lambda_get_payment_methods" {
   }
 }
 
+/* API Gateway */
+resource "aws_api_gateway_resource" "PaymentMethods" {
+  rest_api_id = aws_api_gateway_rest_api.Marchanta.id
+  parent_id   = aws_api_gateway_rest_api.Marchanta.root_resource_id
+  path_part   = "payment-methods"
+}
+
+resource "aws_api_gateway_method" "GetPaymentMethods" {
+  rest_api_id   = aws_api_gateway_rest_api.Marchanta.id
+  resource_id   = aws_api_gateway_resource.PaymentMethods.id
+  http_method   = "GET"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "PaymentMethodsIntegration" {
+  rest_api_id             = aws_api_gateway_rest_api.Marchanta.id
+  resource_id             = aws_api_gateway_resource.PaymentMethods.id
+  http_method             = aws_api_gateway_method.GetPaymentMethods.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.lambda_get_payment_methods.invoke_arn
+}
+
+resource "aws_lambda_permission" "PaymentMethodsPermission" {
+  statement_id  = "AllowExecutionFromAPIGateway"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.lambda_get_payment_methods.function_name
+  principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_api_gateway_rest_api.Marchanta.execution_arn}/*/*"
+}
