@@ -4,14 +4,14 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 3.66.0"
     }
-    /* random = { */
-    /*   source  = "hashicorp/random" */
-    /*   version = "~> 3.1.0" */
-    /* } */
-    /* archive = { */
-    /*   source  = "hashicorp/archive" */
-    /*   version = "~> 2.2.0" */
-    /* } */
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.1.0"
+    }
+    archive = {
+      source  = "hashicorp/archive"
+      version = "~> 2.2.0"
+    }
   }
 }
 provider "aws" {
@@ -70,8 +70,9 @@ resource "aws_db_parameter_group" "marchanta" {
 }
 
 resource "random_password" "password" {
-  length = 15
-  special = true
+  length           = 16
+  special          = true
+  override_special = "_%@"
 }
 
 resource "aws_db_instance" "marchanta" {
@@ -91,29 +92,53 @@ resource "aws_db_instance" "marchanta" {
   
 }
 
-resource "aws_kms_key" "default" {
-  name = "rds_marchanta"
-  description             = "RDS Key Management Service"
-  deletion_window_in_days = 30
+/* resource "aws_kms_key" "default" { */
+/*   name = "rds_marchanta" */
+/*   description             = "RDS Key Management Service" */
+/*   deletion_window_in_days = 30 */
 
-  tags = {
-    Name = "marchanta"
-  }
-}
-
-resourse "aws_secretsmanager_secret" "rds_marchanta_pass" {
-  secret_id = aws_secretsmanager_secret.default.id
-  secret_string = random_password.password.result
-}
-
-/* resource "random_pet" "lambda_bucket_name" { */
-/*   prefix = "marchanta-lambdas" */
-/*   length = 4 */
+/*   tags = { */
+/*     Name = "marchanta" */
+/*   } */
 /* } */
 
-/* resource "aws_s3_bucket" "lambda_bucket" { */
-/*   bucket = random_pet.lambda_bucket_name.id */
-
-/*   acl           = "private" */
-/*   force_destroy = true */
+/* resourse "aws_secretsmanager_secret" "rds_marchanta_pass" { */
+/*   secret_id = aws_secretsmanager_secret.default.id */
+/*   secret_string = random_password.password.result */
 /* } */
+
+resource "random_pet" "lambda_bucket_name" {
+  prefix = "marchanta-lambdas"
+  length = 4
+}
+
+resource "aws_s3_bucket" "lambda_bucket" {
+  bucket = random_pet.lambda_bucket_name.id
+
+  acl           = "private"
+  force_destroy = true
+}
+
+/* Lambdas madness */
+resource "aws_iam_role" "lambda_exec" {
+  name = "serverless_lambda"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Sid    = ""
+      Principal = {
+        Service = "lambda.amazonaws.com"
+      }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_policy" {
+  role       = aws_iam_role.lambda_exec.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
